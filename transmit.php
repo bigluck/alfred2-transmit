@@ -7,14 +7,49 @@ require('CFPropertyList.php');
 // Main configuration
 $inQuery = $argv[1] ?: '';
 $root = exec('printf $HOME').'/Library/Application Support/Transmit/Metadata/';
+$rootPreferences = exec('printf $HOME').'/Library/Preferences/com.panic.Transmit.plist';
 $reRowQuery = '/'.preg_quote($inQuery).'/i';
 $reValidName = '/\.favoriteMetadata$/';
 $results = array();
+$excludeResults = array();
 $defaultPorts = array(
 	'FTP' => ':21',
 	'SFTP' => ':22',
 	'HTTP' => ':80',
 	'HTTPS' => ':443');
+
+
+// Find history elements
+$pList = new CFPropertyList($rootPreferences);
+$data = $pList->toArray();
+
+$fName = tempnam('/tmp', 'tm-');
+file_put_contents($fName, $data['FavoriteCollections']);
+
+$pList = new CFPropertyList($fName);
+
+$matchHistory = false;
+
+$data = $pList->toArray();
+foreach ($data['$objects'] AS $i => $value)
+{
+	if ($matchHistory === false)
+	{
+		if ($value == 'History')
+			$matchHistory = true;
+	} elseif ($matchHistory === true)
+	{
+		if ($value['NS.objects'])
+			$matchHistory = count($value['NS.objects']);
+	} elseif ($matchHistory > 0)
+	{
+		if (is_array($value) && isset($value['NS.string']) && preg_match('/^[\dA-Fa-f]{8}\-[\dA-Fa-f]{4}\-[\dA-Fa-f]{4}\-[\dA-Fa-f]{4}\-[\dA-Fa-f]{12}$/', $value['NS.string']))
+			$excludeResults[$value['NS.string']] = $matchHistory--;
+	} else
+		break;
+}
+
+unlink($fName);
 
 
 // Reading Transmit Metadata files
@@ -30,8 +65,8 @@ if (($dp = @opendir($root)) !== false)
 				$data['com_panic_transmit_username'],
 				$data['com_panic_transmit_server'],
 				$data['com_panic_transmit_remotePath']));
-
-			if (preg_match($reRowQuery, $rowQuery))
+			
+			if (!$excludeResults[$data['com_panic_transmit_uniqueIdentifier']] && preg_match($reRowQuery, $rowQuery))
 				$results[] = array(
 					'uid' => $data['com_panic_transmit_uniqueIdentifier'],
 					'arg' => $root.$fName,
