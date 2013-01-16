@@ -3,6 +3,8 @@ Transmit Favorites for Alfred 2
 
 A simple Alfred 2 workflow with Transmit 2 support.
 
+![Alfred 2 Transmit 2](http://i49.tinypic.com/s1jd08.jpg)
+
 
 Installation
 ----------------
