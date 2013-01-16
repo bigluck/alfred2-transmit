@@ -20,36 +20,39 @@ $defaultPorts = array(
 
 
 // Find history elements
-$pList = new CFPropertyList($rootPreferences);
-$data = $pList->toArray();
-
-$fName = tempnam('/tmp', 'tm-');
-file_put_contents($fName, $data['FavoriteCollections']);
-
-$pList = new CFPropertyList($fName);
-
-$matchHistory = false;
-
-$data = $pList->toArray();
-foreach ($data['$objects'] AS $i => $value)
+if (file_exists($rootPreferences))
 {
-	if ($matchHistory === false)
-	{
-		if ($value == 'History')
-			$matchHistory = true;
-	} elseif ($matchHistory === true)
-	{
-		if ($value['NS.objects'])
-			$matchHistory = count($value['NS.objects']);
-	} elseif ($matchHistory > 0)
-	{
-		if (is_array($value) && isset($value['NS.string']) && preg_match('/^[\dA-Fa-f]{8}\-[\dA-Fa-f]{4}\-[\dA-Fa-f]{4}\-[\dA-Fa-f]{4}\-[\dA-Fa-f]{12}$/', $value['NS.string']))
-			$excludeResults[$value['NS.string']] = $matchHistory--;
-	} else
-		break;
-}
+	$pList = new CFPropertyList($rootPreferences);
+	$data = $pList->toArray();
 
-unlink($fName);
+	$fName = tempnam('/tmp', 'tm-');
+	file_put_contents($fName, $data['FavoriteCollections']);
+
+	$pList = new CFPropertyList($fName);
+
+	$matchHistory = false;
+
+	$data = $pList->toArray();
+	foreach ($data['$objects'] AS $i => $value)
+	{
+		if ($matchHistory === false)
+		{
+			if ($value == 'History')
+				$matchHistory = true;
+		} elseif ($matchHistory === true)
+		{
+			if ($value['NS.objects'])
+				$matchHistory = count($value['NS.objects']);
+		} elseif ($matchHistory > 0)
+		{
+			if (is_array($value) && isset($value['NS.string']) && preg_match('/^[\dA-Fa-f]{8}\-[\dA-Fa-f]{4}\-[\dA-Fa-f]{4}\-[\dA-Fa-f]{4}\-[\dA-Fa-f]{12}$/', $value['NS.string']))
+				$excludeResults[$value['NS.string']] = $matchHistory--;
+		} else
+			break;
+	}
+
+	unlink($fName);
+}
 
 
 // Reading Transmit Metadata files
